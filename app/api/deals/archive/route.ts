@@ -38,14 +38,14 @@ export async function POST(request: NextRequest) {
 
   // 3. Insert into dead_deals
   try {
-    await sql(`INSERT INTO dead_deals (${cols}) VALUES (${placeholders})`, ...Object.values(deadDeal));
+    await sql(`INSERT INTO dead_deals (${cols}) VALUES (${placeholders})`, Object.values(deadDeal));
   } catch (e) {
     return NextResponse.json({ error: `Failed to archive: ${(e as Error).message}` }, { status: 500 });
   }
 
   // 4. Delete from original table
   try {
-    await sql(`DELETE FROM ${sourceTable} WHERE id = $1`, id);
+    await sql(`DELETE FROM ${sourceTable} WHERE id = $1`, [id]);
   } catch (e) {
     return NextResponse.json({ error: `Archived but failed to remove from ${table}: ${(e as Error).message}` }, { status: 500 });
   }

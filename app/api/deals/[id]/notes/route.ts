@@ -8,7 +8,7 @@ export async function GET(
   const { id } = await params;
   const rows = await sql(
     `SELECT * FROM meeting_notes WHERE affected_deal_ids @> ARRAY[$1::uuid] ORDER BY created_at DESC`,
-    id
+    [id]
   );
   return NextResponse.json(rows);
 }

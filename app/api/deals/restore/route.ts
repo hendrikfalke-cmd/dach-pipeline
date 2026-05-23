@@ -42,14 +42,14 @@ export async function POST(request: NextRequest) {
 
   // 3. Insert into target table
   try {
-    await sql(`INSERT INTO ${targetTable} (${cols}) VALUES (${placeholders})`, ...Object.values(restored));
+    await sql(`INSERT INTO ${targetTable} (${cols}) VALUES (${placeholders})`, Object.values(restored));
   } catch (e) {
     return NextResponse.json({ error: `Failed to restore: ${(e as Error).message}` }, { status: 500 });
   }
 
   // 4. Delete from dead_deals
   try {
-    await sql(`DELETE FROM dead_deals WHERE id = $1`, id);
+    await sql(`DELETE FROM dead_deals WHERE id = $1`, [id]);
   } catch (e) {
     return NextResponse.json({ error: `Restored but failed to remove from archive: ${(e as Error).message}` }, { status: 500 });
   }

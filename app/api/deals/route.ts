@@ -15,7 +15,7 @@ export async function GET(request: NextRequest) {
     const q = `%${checkDuplicate.toLowerCase().trim()}%`;
     const results: Array<{ id: string; company: string; table: string }> = [];
     for (const t of ['active_deals', 'expected_deals', 'dead_deals']) {
-      const rows = await sql(`SELECT id, company FROM ${t} WHERE LOWER(company) ILIKE $1`, q);
+      const rows = await sql(`SELECT id, company FROM ${t} WHERE LOWER(company) ILIKE $1`, [q]);
       (rows as Array<{ id: string; company: string }>).forEach(d =>
         results.push({ ...d, table: t })
       );
@@ -30,7 +30,7 @@ export async function GET(request: NextRequest) {
       const s = `%${search}%`;
       rows = await sql(
         `SELECT * FROM ${table} WHERE company ILIKE $1 OR industry ILIKE $1 OR owner ILIKE $1 OR project ILIKE $1 ORDER BY created_at DESC`,
-        s
+        [s]
       );
     } else {
       rows = await sql(`SELECT * FROM ${table} ORDER BY created_at DESC`);
@@ -44,12 +44,12 @@ export async function GET(request: NextRequest) {
     const s = `%${search}%`;
     rows = await sql(
       `SELECT *, COUNT(*) OVER() AS _total FROM ${table} WHERE company ILIKE $1 OR industry ILIKE $1 OR owner ILIKE $1 OR project ILIKE $1 ORDER BY created_at DESC LIMIT $2 OFFSET $3`,
-      s, limit, offset
+      [s, limit, offset]
     );
   } else {
     rows = await sql(
       `SELECT *, COUNT(*) OVER() AS _total FROM ${table} ORDER BY created_at DESC LIMIT $1 OFFSET $2`,
-      limit, offset
+      [limit, offset]
     );
   }
 
@@ -70,7 +70,7 @@ export async function POST(request: NextRequest) {
   const placeholders = Object.keys(dealData).map((_, i) => `$${i + 1}`).join(', ');
   const rows = await sql(
     `INSERT INTO ${targetTable} (${cols}) VALUES (${placeholders}) RETURNING *`,
-    ...Object.values(dealData)
+    Object.values(dealData)
   );
   return NextResponse.json(rows[0]);
 }
@@ -83,7 +83,7 @@ export async function PUT(request: NextRequest) {
   const values = [...Object.values(updates), id];
   const rows = await sql(
     `UPDATE ${targetTable} SET ${setClause} WHERE id = $${values.length} RETURNING *`,
-    ...values
+    values
   );
   if (!rows[0]) return NextResponse.json({ error: 'Not found' }, { status: 404 });
   return NextResponse.json(rows[0]);
@@ -92,6 +92,6 @@ export async function PUT(request: NextRequest) {
 export async function DELETE(request: NextRequest) {
   const { id, table } = await request.json();
   const targetTable = validateTable(table || 'active_deals');
-  await sql(`DELETE FROM ${targetTable} WHERE id = $1`, id);
+  await sql(`DELETE FROM ${targetTable} WHERE id = $1`, [id]);
   return NextResponse.json({ success: true });
 }
