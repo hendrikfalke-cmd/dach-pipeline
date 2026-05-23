@@ -1,36 +1,62 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# DACH Pipeline
 
-## Getting Started
+Private credit origination tracker for the DACH market. Tracks active deals, expected deals, sponsors, advisors, and meeting notes — with AI-powered parsing of pipeline screenshots and handwritten notes.
 
-First, run the development server:
+## Deploy your own instance
+
+Each person gets their own database and login — data is fully separate.
+
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/hendrikfalke-cmd/dach-pipeline&env=DATABASE_URL,APP_PASSWORD,ANTHROPIC_API_KEY,PIPELINE_API_KEY&envDescription=See%20README%20for%20setup%20instructions&project-name=dach-pipeline&repository-name=dach-pipeline)
+
+### Step 1 — Create your database (Neon)
+
+1. Sign up at [neon.tech](https://neon.tech) → create a new project
+2. Go to **SQL Editor** → paste the contents of [`schema.sql`](./schema.sql) → run it
+3. Copy your **connection string** from Dashboard → Connection Details
+
+### Step 2 — Deploy to Vercel
+
+Click the button above. When prompted for environment variables:
+
+| Variable | Description |
+|---|---|
+| `DATABASE_URL` | Your Neon connection string (`postgresql://...`) |
+| `APP_PASSWORD` | Password to log into the app — choose anything |
+| `ANTHROPIC_API_KEY` | From [console.anthropic.com](https://console.anthropic.com) — needed for AI parsing |
+| `PIPELINE_API_KEY` | Optional — protects the `/api/pipeline-summary` export endpoint |
+
+### Step 3 — Done
+
+Your app is live at `https://your-project.vercel.app`. Log in with the `APP_PASSWORD` you set.
+
+---
+
+## Run locally
+
+```bash
+git clone https://github.com/hendrikfalke-cmd/dach-pipeline
+cd dach-pipeline
+npm install
+```
+
+Create `.env.local`:
+```
+DATABASE_URL=postgresql://your-neon-connection-string
+APP_PASSWORD=yourpassword
+ANTHROPIC_API_KEY=sk-ant-...
+```
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000).
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+---
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Stack
 
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- **Frontend/Backend** — Next.js 16 on Vercel
+- **Database** — PostgreSQL via [Neon](https://neon.tech)
+- **AI** — Claude (Anthropic) for pipeline screenshot parsing and meeting note extraction
+- **Auth** — Single shared password, cookie-based session (90 days)
