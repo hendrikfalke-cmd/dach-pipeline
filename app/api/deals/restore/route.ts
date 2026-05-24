@@ -11,7 +11,7 @@ export async function POST(request: NextRequest) {
   const targetTable = validateTable(target_table);
 
   // 1. Fetch the dead deal
-  const rows = await sql(`SELECT * FROM dead_deals WHERE id = $1`, id);
+  const rows = await sql(`SELECT * FROM dead_deals WHERE id = $1`, [id]);
   const deal = rows[0] as Record<string, unknown> | undefined;
   if (!deal) return NextResponse.json({ error: 'Deal not found in archive' }, { status: 404 });
 

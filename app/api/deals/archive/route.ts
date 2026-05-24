@@ -11,7 +11,7 @@ export async function POST(request: NextRequest) {
   const sourceTable = validateTable(table);
 
   // 1. Fetch the deal
-  const rows = await sql(`SELECT * FROM ${sourceTable} WHERE id = $1`, id);
+  const rows = await sql(`SELECT * FROM ${sourceTable} WHERE id = $1`, [id]);
   const deal = rows[0] as Record<string, unknown> | undefined;
   if (!deal) return NextResponse.json({ error: 'Deal not found' }, { status: 404 });
 
