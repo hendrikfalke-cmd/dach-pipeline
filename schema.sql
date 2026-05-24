@@ -1,7 +1,9 @@
 -- ============================================================
 -- DACH Pipeline — Neon Schema
--- Run this in the Neon SQL Editor to set up your database
+-- Run this entire file in the Neon SQL Editor to set up your database.
 -- ============================================================
+
+-- ── Deal pipeline ─────────────────────────────────────────────────────────────
 
 CREATE TABLE active_deals (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
@@ -90,7 +92,59 @@ CREATE TABLE meeting_notes (
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- Auto-update updated_at on row changes
+-- ── Sponsor CRM ───────────────────────────────────────────────────────────────
+
+CREATE TABLE crm_institutions (
+  id          TEXT        PRIMARY KEY,
+  name        TEXT        NOT NULL,
+  type        TEXT        NOT NULL DEFAULT 'PE',
+  hq          TEXT        NOT NULL DEFAULT '',
+  region      TEXT        NOT NULL DEFAULT '',
+  aum         TEXT        NOT NULL DEFAULT '',
+  strategy    TEXT        NOT NULL DEFAULT '',
+  created_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at  TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE TABLE crm_contacts (
+  id             TEXT        PRIMARY KEY,
+  institution_id TEXT        NOT NULL REFERENCES crm_institutions(id) ON DELETE CASCADE,
+  name           TEXT        NOT NULL,
+  role           TEXT        NOT NULL DEFAULT '',
+  email          TEXT        NOT NULL DEFAULT '',
+  notes          TEXT        NOT NULL DEFAULT '',
+  created_at     TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE TABLE crm_interactions (
+  id             TEXT        PRIMARY KEY,
+  institution_id TEXT        NOT NULL REFERENCES crm_institutions(id) ON DELETE CASCADE,
+  contact_ids    TEXT[]      NOT NULL DEFAULT '{}',
+  date           DATE        NOT NULL,
+  type           TEXT        NOT NULL DEFAULT 'Meeting',
+  location       TEXT        NOT NULL DEFAULT '',
+  summary        TEXT        NOT NULL DEFAULT '',
+  raw_notes      TEXT        NOT NULL DEFAULT '',
+  signals        JSONB       NOT NULL DEFAULT '[]'::jsonb,
+  deals          JSONB       NOT NULL DEFAULT '[]'::jsonb,
+  created_at     TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE TABLE crm_synthesized_profiles (
+  id                   UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
+  institution_id       TEXT        NOT NULL UNIQUE REFERENCES crm_institutions(id) ON DELETE CASCADE,
+  investment_thesis    TEXT        NOT NULL DEFAULT '',
+  strong_likes         TEXT        NOT NULL DEFAULT '',
+  avoids               TEXT        NOT NULL DEFAULT '',
+  preferred_structures TEXT        NOT NULL DEFAULT '',
+  typical_deal         TEXT        NOT NULL DEFAULT '',
+  coverage_note        TEXT        NOT NULL DEFAULT '',
+  created_at           TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at           TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+-- ── Triggers ──────────────────────────────────────────────────────────────────
+
 CREATE OR REPLACE FUNCTION update_updated_at()
 RETURNS TRIGGER AS $$
 BEGIN
@@ -107,9 +161,15 @@ CREATE TRIGGER expected_deals_updated_at
   BEFORE UPDATE ON expected_deals
   FOR EACH ROW EXECUTE FUNCTION update_updated_at();
 
--- Indexes
-CREATE INDEX idx_meeting_notes_deal_ids ON meeting_notes USING GIN (affected_deal_ids);
-CREATE INDEX idx_meeting_notes_company ON meeting_notes (deal_company);
-CREATE INDEX idx_meeting_notes_date ON meeting_notes (meeting_date DESC);
-CREATE INDEX idx_pipeline_uploads_type ON pipeline_uploads (upload_type);
+-- ── Indexes ───────────────────────────────────────────────────────────────────
+
+CREATE INDEX idx_meeting_notes_deal_ids  ON meeting_notes USING GIN (affected_deal_ids);
+CREATE INDEX idx_meeting_notes_company   ON meeting_notes (deal_company);
+CREATE INDEX idx_meeting_notes_date      ON meeting_notes (meeting_date DESC);
+CREATE INDEX idx_pipeline_uploads_type   ON pipeline_uploads (upload_type);
 CREATE INDEX idx_pipeline_uploads_created ON pipeline_uploads (created_at DESC);
+
+CREATE INDEX idx_crm_contacts_inst       ON crm_contacts(institution_id);
+CREATE INDEX idx_crm_interactions_inst   ON crm_interactions(institution_id);
+CREATE INDEX idx_crm_interactions_date   ON crm_interactions(date DESC);
+CREATE INDEX idx_crm_profiles_inst       ON crm_synthesized_profiles(institution_id);
