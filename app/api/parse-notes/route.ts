@@ -143,30 +143,32 @@ Analyze these notes and return proposed updates to the pipeline.`;
         const companyLower = (update.company || '').toLowerCase().trim();
 
         // Try exact match in preferred table
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         let match = (preferredList || []).find(
-          (d: { company: string }) => d.company.toLowerCase().trim() === companyLower
+          (d: any) => (d.company || '').toLowerCase().trim() === companyLower
         );
 
         // Try fuzzy (includes) in preferred table
         if (!match) {
           match = (preferredList || []).find(
-            (d: { company: string }) =>
-              d.company.toLowerCase().includes(companyLower) ||
-              companyLower.includes(d.company.toLowerCase().trim())
+            (d: any) =>
+              (d.company || '').toLowerCase().includes(companyLower) ||
+              companyLower.includes((d.company || '').toLowerCase().trim())
           );
         }
 
         // Try all deals (both tables)
         if (!match) {
           match = allDeals.find(
-            (d: { company: string }) =>
-              d.company.toLowerCase().trim() === companyLower ||
-              d.company.toLowerCase().includes(companyLower) ||
-              companyLower.includes(d.company.toLowerCase().trim())
+            (d: any) =>
+              (d.company || '').toLowerCase().trim() === companyLower ||
+              (d.company || '').toLowerCase().includes(companyLower) ||
+              companyLower.includes((d.company || '').toLowerCase().trim())
           );
           // Update the table reference if found in the other table
           if (match) {
-            const isActive = (activeDeals || []).some((d: { id: string }) => d.id === match.id);
+            const matchId = match.id;
+            const isActive = (activeDeals || []).some((d: any) => d.id === matchId);
             update.deal_table = isActive ? 'active_deals' : 'expected_deals';
           }
         }
