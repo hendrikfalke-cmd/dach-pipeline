@@ -113,7 +113,7 @@ export default function NotesUpload() {
       }
 
       // Store the meeting note with full detail
-      await fetch('/api/meeting-notes', {
+      const noteRes = await fetch('/api/meeting-notes', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -127,13 +127,16 @@ export default function NotesUpload() {
           deals_added: addedCount,
           deals_updated: updatedCount,
         }),
-      }).catch(() => {});
+      }).catch(() => null);
+
+      const noteMeta = noteRes ? await noteRes.json().catch(() => null) : null;
+      const crmMsg = noteMeta?.crm_logged ? ` · logged to CRM (${noteMeta.crm_institution})` : '';
 
       setToast({
-        message: `Applied: ${updatedCount} updated, ${addedCount} added`,
+        message: `Applied: ${updatedCount} updated, ${addedCount} added${crmMsg}`,
         type: 'success',
       });
-      setTimeout(() => router.push('/'), 1500);
+      setTimeout(() => router.push('/'), 2000);
     } catch {
       setToast({ message: 'Failed to apply some changes', type: 'error' });
       setStage('review');

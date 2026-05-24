@@ -1,6 +1,45 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { sql } from '@/lib/db';
 
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+
+function uid(prefix = 'ix') {
+  return `${prefix}${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`;
+}
+
+/**
+ * Try to find a CRM institution whose name fuzzy-matches the `meeting_with`
+ * string returned by the AI parser. We check:
+ *   1. Exact case-insensitive match
+ *   2. Institution name is contained in the meeting_with string
+ *   3. Any word in institution name is contained in meeting_with string (≥5 chars)
+ */
+function matchInstitution(
+  meetingWith: string,
+  institutions: Array<{ id: string; name: string }>
+): { id: string; name: string } | null {
+  if (!meetingWith?.trim() || !institutions.length) return null;
+
+  const haystack = meetingWith.toLowerCase().trim();
+
+  // 1. Exact match
+  const exact = institutions.find(i => i.name.toLowerCase().trim() === haystack);
+  if (exact) return exact;
+
+  // 2. Institution name is a substring of meeting_with
+  const sub = institutions.find(i => haystack.includes(i.name.toLowerCase().trim()));
+  if (sub) return sub;
+
+  // 3. Any significant word (≥5 chars) in institution name appears in meeting_with
+  const wordMatch = institutions.find(i => {
+    const words = i.name.toLowerCase().split(/\s+/).filter(w => w.length >= 5);
+    return words.some(w => haystack.includes(w));
+  });
+  return wordMatch || null;
+}
+
+// ─── POST ─────────────────────────────────────────────────────────────────────
+
 export async function POST(request: NextRequest) {
   const body = await request.json();
   const {
@@ -39,8 +78,62 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: (e as Error).message }, { status: 500 });
   }
 
-  return NextResponse.json({ success: true });
+  // 3. Auto-log to Sponsor CRM if meeting_with matches a known institution
+  let crmLogged = false;
+  let crmInstitutionName: string | null = null;
+
+  try {
+    // Only attempt if we have something in meeting_with
+    const meetingWithStr = (meeting_with || meeting_context || '').trim();
+    if (meetingWithStr) {
+      const institutions = await sql(
+        `SELECT id, name FROM crm_institutions`
+      ) as Array<{ id: string; name: string }>;
+
+      const match = matchInstitution(meetingWithStr, institutions);
+
+      if (match) {
+        const today = new Date().toISOString().slice(0, 10);
+        const summary = (parsed_updates as { meeting_summary?: string } | null)?.meeting_summary || '';
+        const dealsList = JSON.stringify(
+          Array.isArray(deal_companies) ? deal_companies.filter(Boolean) : []
+        );
+
+        await sql(
+          `INSERT INTO crm_interactions
+             (id, institution_id, contact_ids, date, type, location, summary, raw_notes, signals, deals)
+           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9::jsonb, $10::jsonb)
+           ON CONFLICT (id) DO NOTHING`,
+          [
+            uid('ix'),
+            match.id,
+            [],            // contact_ids — unknown from meeting notes
+            today,
+            'Meeting',
+            '',            // location unknown
+            summary,
+            raw_content || '',
+            '[]',          // signals empty — user can extract later with AI
+            dealsList,
+          ]
+        );
+
+        crmLogged = true;
+        crmInstitutionName = match.name;
+      }
+    }
+  } catch (e) {
+    // Non-fatal — CRM logging failure should not break the meeting note save
+    console.error('CRM auto-log error:', e);
+  }
+
+  return NextResponse.json({
+    success: true,
+    ...(crmLogged && { crm_logged: true, crm_institution: crmInstitutionName }),
+  });
 }
+
+// ─── GET ──────────────────────────────────────────────────────────────────────
 
 export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams;
