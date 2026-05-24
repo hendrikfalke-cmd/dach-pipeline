@@ -8,6 +8,11 @@ const VALID_TABLES = new Set([
   'dead_deals',
   'pipeline_uploads',
   'meeting_notes',
+  // CRM tables
+  'crm_institutions',
+  'crm_contacts',
+  'crm_interactions',
+  'crm_synthesized_profiles',
 ]);
 
 export function validateTable(table: string): string {

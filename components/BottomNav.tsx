@@ -41,6 +41,15 @@ const tabs = [
     ),
   },
   {
+    label: 'CRM',
+    href: '/crm',
+    icon: (active: boolean) => (
+      <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke={active ? '#10b981' : '#64748b'} strokeWidth={1.5}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 21h19.5m-18-18v18m10.5-18v18m6-13.5V21M6.75 6.75h.75m-.75 3h.75m-.75 3h.75m3-6h.75m-.75 3h.75m-.75 3h.75M6.75 21v-3.375c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21M3 3h12m-.75 4.5H21m-3.75 3.75h.008v.008h-.008v-.008zm0 3h.008v.008h-.008v-.008zm0 3h.008v.008h-.008v-.008z" />
+      </svg>
+    ),
+  },
+  {
     label: 'More',
     href: '/stats',
     icon: (active: boolean) => (
@@ -104,6 +113,12 @@ export default function BottomNav() {
 
         {/* Footer links */}
         <div className="space-y-1 pt-4 border-t border-border mt-4">
+          <Link href="/crm" className={`flex items-center gap-3 px-3 py-2.5 rounded-xl transition-colors ${pathname.startsWith('/crm') ? 'bg-accent/10 text-accent' : 'text-text-muted hover:bg-bg-elevated hover:text-text-primary'}`}>
+            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 21h19.5m-18-18v18m10.5-18v18m6-13.5V21M6.75 6.75h.75m-.75 3h.75m-.75 3h.75m3-6h.75m-.75 3h.75m-.75 3h.75M6.75 21v-3.375c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21M3 3h12m-.75 4.5H21m-3.75 3.75h.008v.008h-.008v-.008zm0 3h.008v.008h-.008v-.008zm0 3h.008v.008h-.008v-.008z" />
+            </svg>
+            <span className="text-sm font-medium">Sponsor CRM</span>
+          </Link>
           <Link href="/digest" className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-text-muted hover:bg-bg-elevated hover:text-text-primary transition-colors ${pathname === '/digest' ? 'bg-accent/10 text-accent' : ''}`}>
             <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M12 7.5h1.5m-1.5 3h1.5m-7.5 3h7.5m-7.5 3h7.5m3-9h3.375c.621 0 1.125.504 1.125 1.125V18a2.25 2.25 0 01-2.25 2.25M16.5 7.5V18a2.25 2.25 0 002.25 2.25M16.5 7.5V4.875c0-.621-.504-1.125-1.125-1.125H4.125C3.504 3.75 3 4.254 3 4.875V18a2.25 2.25 0 002.25 2.25h13.5M6 7.5h3v3H6v-3z" />
